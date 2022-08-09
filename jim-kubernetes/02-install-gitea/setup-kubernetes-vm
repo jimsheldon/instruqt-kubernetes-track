@@ -1,0 +1,143 @@
+#!/bin/bash
+
+cat <<EOF > gitea-values.yaml
+service:
+  http:
+    # the Kubernetes service gitea-http'  service type
+    type: NodePort
+    # the gitea-http service port
+    port: 3000
+    # this port will be used in KinD extra port mappings to allow accessing the
+    # Gitea server from our laptops
+    nodePort: 30950
+gitea:
+  # the admin credentials to access Gitea typically push/pull operations
+  admin:
+    # DON'T use username admin as its reserved and gitea will
+    # fail to start
+    username: demo
+    password: demo@123
+    email: admin@example.com
+  config:
+    server:
+      # for this demo we will use http protocol to access Git repos
+      PROTOCOL: http
+      # the port gitea will listen on
+      HTTP_PORT: 3000
+      # the Git domain - all the repositories will be using this domain
+      DOMAIN: gitea.workshop
+      # The clone base url
+      ROOT_URL: http://$HOSTNAME.$_SANDBOX_ID.instruqt.io
+    webhook:
+      # since we will deploy to local network we will allow all hosts
+      ALLOWED_HOST_LIST: "*"
+      # since we are in http mode disable TLS
+      SKIP_TLS_VERIFY: true
+EOF
+
+cat <<EOF > gitea-helper.yaml
+apiVersion: v1
+kind: Namespace
+metadata:
+  labels:
+    app.kubernetes.io/version: "0.2.0"
+  name: drone
+spec: {}
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  labels:
+    app.kubernetes.io/version: "0.2.0"
+  name: gitea-configurer
+  namespace: drone
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  labels:
+    app.kubernetes.io/version: "0.2.0"
+  name: gitea-configurer
+  namespace: drone
+rules:
+  - apiGroups:
+      - ""
+    resources:
+      - secrets
+    verbs:
+      - '*'
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  labels:
+    app.kubernetes.io/version: "0.2.0"
+  name: gitea-configurer
+  namespace: drone
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: gitea-configurer
+subjects:
+  - apiGroup: ""
+    kind: ServiceAccount
+    name: gitea-configurer
+    namespace: drone
+---
+apiVersion: v1
+data:
+  workshop.yaml: |
+    giteaAdminUserName: demo
+    giteaAdminUserPassword: demo@123
+    giteaURL: http://gitea-http.default:3000
+    users:
+      from: 1
+      to: 1
+      oAuthAppName: demo-oauth
+      oAuthRedirectURI: http://$HOSTNAME.$_SANDBOX_ID.instruqt.io:30980
+      addKubernetesSecret: true
+      secretNamespace: drone
+      repos:
+        - https://github.com/harness-apps/MERN-Stack-Example
+        - https://github.com/harness-apps/MERN-Stack-Example-GitOps
+
+kind: ConfigMap
+metadata:
+  labels:
+    app.kubernetes.io/version: "0.2.0"
+  name: workshop-config
+  namespace: drone
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  labels:
+    app.kubernetes.io/version: "0.2.0"
+  name: workshop-setup
+  namespace: drone
+spec:
+  backoffLimit: 0
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/version: "0.2.0"
+    spec:
+      containers:
+        - args:
+            - setup-workshop
+            - --workshop-file=/config/workshop.yaml
+            - --verbose=debug
+          image: docker.io/kameshsampath/drone-tutorial-gitea-helper:v0.2.0@sha256:2f9e10ed31a6cc8e1e24d6493028c63a325c029f9e63eb47d4bf75828c540dba
+          name: gitea-configurer
+          volumeMounts:
+            - mountPath: /config
+              name: workshop-config
+      restartPolicy: Never
+      serviceAccountName: gitea-configurer
+      volumes:
+        - configMap:
+            name: workshop-config
+          name: workshop-config
+
+---
+EOF

@@ -1,0 +1,21 @@
+slug: jim-kubernetes
+id: kujn8h4kfgl4
+type: track
+title: Jim Kubernetes
+teaser: Learn how to build Kubernetes-based tracks with this template
+description: |-
+  Learn how to build Kubernetes-based tracks with this template.
+
+  **This track demonstrates how to:**
+    - Provision a single node k3s cluster on a virtual machine
+    - Deploy a webserver (NGINX) on Kubernetes
+    - Use a service tab to expose the web server through the Instruqt UI
+icon: https://cdn.instruqt.com/assets/templates/kubernetes.png
+tags:
+- ""
+owner: harness
+developers:
+- james.sheldon@harness.io
+private: true
+published: true
+checksum: "5079312216002989692"
