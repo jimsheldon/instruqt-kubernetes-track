@@ -27,7 +27,7 @@ gitea:
       # the Git domain - all the repositories will be using this domain
       DOMAIN: gitea.workshop
       # The clone base url
-      ROOT_URL: http://$HOSTNAME.$_SANDBOX_ID.instruqt.io
+      ROOT_URL: http://$HOSTNAME.$_SANDBOX_ID.instruqt.io:30950
     webhook:
       # since we will deploy to local network we will allow all hosts
       ALLOWED_HOST_LIST: "*"
@@ -140,4 +140,24 @@ spec:
           name: workshop-config
 
 ---
+EOF
+
+cat <<EOF > drone-values.yaml
+service:
+  type: NodePort
+  port: 30980
+  nodePort: 30980
+extraSecretNamesForEnvFrom:
+  - demo-oauth-user-01-secret
+env:
+  DRONE_SERVER_HOST: $HOSTNAME.$_SANDBOX_ID.instruqt.io:30980
+  DRONE_GITEA_SKIP_VERIFY: true
+  DRONE_GITEA_SERVER: http://$HOSTNAME.$_SANDBOX_ID.instruqt.io:30950
+EOF
+
+cat <<EOF > drone-runner-docker-values.yaml
+extraSecretNamesForEnvFrom:
+  - demo-oauth-user-01-secret
+env:
+  DRONE_RPC_HOST: drone:30980
 EOF

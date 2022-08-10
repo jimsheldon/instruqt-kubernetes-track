@@ -4,3 +4,5 @@ virtualmachines:
   image: instruqt/k3s-v1-21-4
   shell: /bin/bash
   machine_type: n1-standard-16
+  allow_external_ingress:
+  - high-ports
