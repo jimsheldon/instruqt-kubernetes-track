@@ -22,10 +22,9 @@ tabs:
   path: /
   port: 30950
 - title: Drone
-  type: service
-  hostname: kubernetes-vm
+  type: website
   path: /
-  port: 30980
+  url: http://${HOSTNAME}.${_SANDBOX_ID}.instruqt.io:30980
   new_window: true
 difficulty: basic
 timelimit: 600
@@ -84,5 +83,3 @@ Open Drone
 ===========
 
 Click the 'Drone' tab above.
-
-
